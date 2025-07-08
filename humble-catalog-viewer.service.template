@@ -1,0 +1,14 @@
+[Unit]
+Description=Humble Catalog Viewer Webapp
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/path/to/your/humble-catalog-viewer
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+User=yourusername
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target 
