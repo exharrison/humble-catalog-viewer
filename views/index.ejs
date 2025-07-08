@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Humble Bundle Catalog</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .bundle-card {
+            transition: transform 0.2s;
+        }
+        .bundle-card:hover {
+            transform: translateY(-5px);
+        }
+        .search-results {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .matching-book {
+            font-size: 0.9rem;
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background-color: rgba(0,0,0,0.03);
+            border-radius: 0.25rem;
+        }
+        .format-badge {
+            font-size: 0.75rem;
+            margin-right: 0.25rem;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item active">Home</li>
+            </ol>
+        </nav>
+
+        <!-- Source Filter Tabs -->
+        <ul class="nav nav-tabs mb-4" id="sourceTabs">
+            <li class="nav-item">
+                <a class="nav-link <%= filterSource === 'both' ? 'active' : '' %>" href="?filterSource=both<%= filterDownloaded && filterDownloaded !== 'all' ? '&filterDownloaded=' + filterDownloaded : '' %>">Both</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <%= filterSource === 'humble' ? 'active' : '' %>" href="?filterSource=humble<%= filterDownloaded && filterDownloaded !== 'all' ? '&filterDownloaded=' + filterDownloaded : '' %>">Humble</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <%= filterSource === 'fanatical' ? 'active' : '' %>" href="?filterSource=fanatical<%= filterDownloaded && filterDownloaded !== 'all' ? '&filterDownloaded=' + filterDownloaded : '' %>">Fanatical</a>
+            </li>
+        </ul>
+
+        <div class="row mb-4">
+            <div class="col">
+                <h1>Humble Bundle Catalog</h1>
+                <p class="text-muted">
+                    Total Bundles: <%= stats.totalBundles %> | 
+                    Book Bundles: <%= stats.bookBundles %> |
+                    Downloaded Bundles: <%= stats.downloadedBundles %> / <%= stats.bookBundles %>
+                </p>
+            </div>
+        </div>
+
+        <!-- Book Search -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Search by Book Title</h5>
+                <form action="/" method="GET" class="mb-3">
+                    <div class="input-group">
+                        <input type="text" name="bookSearch" class="form-control" 
+                               placeholder="Enter book title..." value="<%= bookSearch %>">
+                        <button class="btn btn-primary" type="submit">Search</button>
+                        <% if (bookSearch) { %>
+                            <a href="/" class="btn btn-outline-secondary">Clear</a>
+                        <% } %>
+                    </div>
+                </form>
+
+                <% if (searchResults) { %>
+                    <div class="search-results">
+                        <% if (searchResults.length === 0) { %>
+                            <div class="alert alert-info">
+                                No bundles found containing "<%= bookSearch %>"
+                            </div>
+                        <% } else { %>
+                            <h6>Found in <%= searchResults.length %> bundle<%= searchResults.length === 1 ? '' : 's' %>:</h6>
+                            <div class="list-group">
+                                <% searchResults.forEach(bundle => { %>
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-1">
+                                                <a href="/bundle/<%= bundle.id %>"><%= bundle.name %></a>
+                                            </h6>
+                                            <small class="text-muted">
+                                                <%= bundle.purchaseDate.toLocaleDateString() %>
+                                            </small>
+                                        </div>
+                                        <% bundle.matchingBooks.forEach(book => { %>
+                                            <div class="matching-book">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div><%= book.title %></div>
+                                                    <div>
+                                                        <% book.formats.forEach(format => { %>
+                                                            <span class="badge bg-secondary format-badge">
+                                                                <%= format %>
+                                                            </span>
+                                                        <% }) %>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <% }) %>
+                                    </div>
+                                <% }) %>
+                            </div>
+                        <% } %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+        
+        <!-- Filter and Sort Controls -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <input type="text" name="filter" class="form-control" placeholder="Search bundles...">
+            </div>
+            <div class="col-md-2">
+                <select id="formatFilter" class="form-select">
+                    <option value="">All Formats</option>
+                    <option value="pdf">PDF</option>
+                    <option value="epub">EPUB</option>
+                    <option value="cbz">CBZ</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" id="startDate" class="form-control" placeholder="Start date">
+            </div>
+            <div class="col-md-3">
+                <input type="date" id="endDate" class="form-control" placeholder="End date">
+            </div>
+        </div>
+
+        <!-- Bundles Grid -->
+        <div id="bundleList" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"></div>
+    </div>
+
+    <script>
+        // Prepare bundle data for client-side rendering
+        const bundles = <%- JSON.stringify(bundles) %>;
+        const filterSource = '<%= filterSource %>';
+
+        function highlight(text, term) {
+            if (!term) return text;
+            const re = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+            return text.replace(re, '<mark>$1</mark>');
+        }
+
+        function renderBundles(filterText, format, startDate, endDate) {
+            const container = document.getElementById('bundleList');
+            const filter = (filterText || '').toLowerCase();
+            const formatVal = (format || '').toLowerCase();
+            const start = startDate ? new Date(startDate) : null;
+            const end = endDate ? new Date(endDate) : null;
+            container.innerHTML = '';
+            const filtered = bundles.filter(b => {
+                // Name match
+                const nameMatch = filter && b.name.toLowerCase().includes(filter);
+                // Book title match
+                const bookMatch = (b.books || []).some(book => {
+                    const bookTitle = book.name || book['Book Title'] || '';
+                    return filter && bookTitle.toLowerCase().includes(filter);
+                });
+                // If filter is empty, show all
+                if (!filter) return true;
+                // Show if either matches
+                return nameMatch || bookMatch;
+            })
+            .filter(b => {
+                // Format filter
+                if (formatVal) {
+                    const hasFormat = (b.books || []).some(book => {
+                        if (book.formats) {
+                            return Object.keys(book.formats).some(f => f.toLowerCase() === formatVal);
+                        }
+                        return false;
+                    });
+                    if (!hasFormat) return false;
+                }
+                // Date range filter
+                if ((start || end) && b.purchaseDate) {
+                    const d = new Date(b.purchaseDate);
+                    if (start && d < start) return false;
+                    if (end && d > end) return false;
+                } else if ((start || end) && !b.purchaseDate) {
+                    return false;
+                }
+                return true;
+            });
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No bundles found.</div>';
+                return;
+            }
+            filtered.forEach(bundle => {
+                const card = document.createElement('div');
+                card.className = 'col bundle-item';
+                let badgeHtml = '';
+                if (filterSource === 'both') {
+                    if (bundle.source === 'humble') {
+                        badgeHtml = "<div class='mt-1'><span class='badge bg-primary'>Humble</span></div>";
+                    } else if (bundle.source === 'fanatical') {
+                        badgeHtml = "<div class='mt-1'><span class='badge bg-warning text-dark'>Fanatical</span></div>";
+                    }
+                }
+                // Highlight matching book titles
+                let matchingBooksHtml = '';
+                if (filter) {
+                    const matchingBooks = (bundle.books || []).filter(book => {
+                        const bookTitle = book.name || book['Book Title'] || '';
+                        return bookTitle.toLowerCase().includes(filter);
+                    });
+                    if (matchingBooks.length > 0) {
+                        matchingBooksHtml = '<div class="mt-1 small text-muted">' + matchingBooks.map(book => {
+                            const bookTitle = book.name || book['Book Title'] || '';
+                            return '📖 ' + highlight(bookTitle, filter);
+                        }).join('<br>') + '</div>';
+                    }
+                }
+                card.innerHTML =
+                    '<div class="card mb-3 bundle-card" data-name="' + bundle.name.toLowerCase() + '">' +
+                    '  <div class="card-body d-flex justify-content-between align-items-center">' +
+                    '    <div>' +
+                    '      <a href="/bundle/' + bundle.id + '" class="h5 text-decoration-none">' + highlight(bundle.name, filter) + '</a>' +
+                    badgeHtml +
+                    matchingBooksHtml +
+                    '    </div>' +
+                    '    <div>' +
+                    '      <span class="text-muted me-3">' + bundle.numBooks + ' books</span>' +
+                    (bundle.downloaded ? '<span class="badge bg-success">Downloaded</span>' : '<span class="badge bg-secondary">Not Downloaded</span>') +
+                    '    </div>' +
+                    '  </div>' +
+                    '</div>';
+                container.appendChild(card);
+            });
+        }
+
+        // Initial render
+        renderBundles('');
+
+        (function() {
+            var filterInput = document.querySelector('input[name="filter"]');
+            var formatInput = document.getElementById('formatFilter');
+            var startDateInput = document.getElementById('startDate');
+            var endDateInput = document.getElementById('endDate');
+            var bundleList = document.getElementById('bundleList');
+            function doFilter() {
+                renderBundles(filterInput.value, formatInput.value, startDateInput.value, endDateInput.value);
+                if ((filterInput.value || formatInput.value || startDateInput.value || endDateInput.value) && bundleList) {
+                    bundleList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+            if (filterInput) filterInput.addEventListener('input', doFilter);
+            if (formatInput) formatInput.addEventListener('change', doFilter);
+            if (startDateInput) startDateInput.addEventListener('change', doFilter);
+            if (endDateInput) endDateInput.addEventListener('change', doFilter);
+        })();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
