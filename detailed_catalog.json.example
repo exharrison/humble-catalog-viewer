@@ -1,0 +1,54 @@
+{
+  "bundles": [
+    {
+      "machine_name": "example_bundle_1",
+      "human_name": "Example Humble Book Bundle",
+      "purchase_date": "2023-01-01T12:00:00Z",
+      "Number of books": 2,
+      "downloaded": false,
+      "gamekey": "FAKEKEY123456",
+      "amount_spent": 10.00,
+      "books": [
+        {
+          "Book Title": "Fake Book One",
+          "Authors": "Jane Doe",
+          "Publisher": "Fake Publisher",
+          "Description": "A sample book for demonstration purposes.",
+          "ISBN": "000-0-00-000000-0",
+          "downloaded": false,
+          "icon": "https://example.com/fakebook1.png",
+          "Available Formats": [
+            {
+              "format": "pdf",
+              "size": "1.2 MB",
+              "download_urls": {"web": "https://example.com/fakebook1.pdf"}
+            },
+            {
+              "format": "epub",
+              "size": "900 KB",
+              "download_urls": {"web": "https://example.com/fakebook1.epub"}
+            }
+          ]
+        },
+        {
+          "Book Title": "Fake Book Two",
+          "Authors": "John Smith",
+          "Publisher": "Another Publisher",
+          "Description": "Another sample book.",
+          "ISBN": "111-1-11-111111-1",
+          "downloaded": true,
+          "icon": "https://example.com/fakebook2.png",
+          "Available Formats": [
+            {
+              "format": "pdf",
+              "size": "2.5 MB",
+              "download_urls": {"web": "https://example.com/fakebook2.pdf"}
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "All Bundles": 1,
+  "Book Bundles": 1
+} 

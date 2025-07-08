@@ -1,0 +1,28 @@
+{
+  "bundles": [
+    {
+      "slug": "example-fanatical-bundle",
+      "name": "Example Fanatical Book Bundle",
+      "cover": "https://example.com/fanaticalcover.png",
+      "total_spent": "5.00",
+      "books": [
+        {
+          "name": "Fanatical Fake Book",
+          "cover": "https://example.com/fanaticalbook.png",
+          "files": [
+            {
+              "_id": "fakefileid1",
+              "format": "pdf",
+              "path": "fanatical_fake_book.pdf",
+              "size_MB": 1.5,
+              "md5": "fakehash1",
+              "api_download": "https://example.com/fanatical_fake_book.pdf",
+              "signed_url": "https://example.com/fanatical_fake_book_signed.pdf",
+              "expiration_date": "2099-12-31T23:59:59Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+} 
