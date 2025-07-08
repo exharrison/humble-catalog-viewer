@@ -12,6 +12,7 @@ A web interface for viewing your Humble Bundle and Fanatical book bundles.
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v14 or newer recommended)
 - [npm](https://www.npmjs.com/)
+- JSON data files from humble (https://github.com/exharrison/humblebundle-ebook-downloader) and fanatical (https://github.com/exharrison/fanatical-ebook-downloader)
 
 ### Installation
 1. Clone this repository:
