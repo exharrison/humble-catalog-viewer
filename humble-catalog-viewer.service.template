@@ -10,5 +10,13 @@ Restart=on-failure
 User=yourusername
 Environment=NODE_ENV=production
 
+# --- Optional: Enable session authentication ---
+# Uncomment the following lines to require login for the webapp
+# Environment=ENABLE_SESSION_AUTH=true
+# Environment=APP_USERNAME=myuser
+# Environment=APP_PASSWORD=mypassword
+# Environment=SESSION_SECRET=some-long-random-string
+# ---------------------------------------------
+
 [Install]
 WantedBy=multi-user.target 

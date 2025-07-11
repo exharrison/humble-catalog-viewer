@@ -4,6 +4,59 @@ const path = require('path');
 const fs = require('fs').promises;
 const app = express();
 const port = 3000;
+const session = require('express-session');
+
+const ENABLE_SESSION_AUTH = process.env.ENABLE_SESSION_AUTH === 'true';
+const APP_USERNAME = process.env.APP_USERNAME || 'admin';
+const APP_PASSWORD = process.env.APP_PASSWORD || 'password';
+
+if (ENABLE_SESSION_AUTH) {
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'change_this_secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+  }));
+
+  // Login page
+  app.get('/login', (req, res) => {
+    if (req.session.user) return res.redirect('/');
+    res.render('login', { error: null });
+  });
+
+  // Login handler
+  app.post('/login', express.urlencoded({ extended: true }), (req, res) => {
+    const { username, password } = req.body;
+    if (username === APP_USERNAME && password === APP_PASSWORD) {
+      req.session.user = username;
+      return res.redirect('/');
+    }
+    res.render('login', { error: 'Invalid credentials' });
+  });
+
+  // Logout
+  app.get('/logout', (req, res) => {
+    req.session.destroy(() => {
+      res.redirect('/login');
+    });
+  });
+
+  // Auth middleware for all routes except login/logout/static
+  app.use((req, res, next) => {
+    if (
+      req.path === '/login' ||
+      req.path === '/logout' ||
+      req.path.startsWith('/public') ||
+      req.path.startsWith('/favicon.ico')
+    ) {
+      return next();
+    }
+    if (!req.session.user) {
+      return res.redirect('/login');
+    }
+    next();
+  });
+}
 
 // Global request logger
 app.use((req, res, next) => {

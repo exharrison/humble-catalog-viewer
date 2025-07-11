@@ -87,3 +87,74 @@ To run the Humble Catalog Viewer as a background service on Linux using systemd:
    ```
 
 The app will now start automatically on boot and can be managed with `systemctl`. 
+
+## Optional Session Authentication
+
+You can enable session-based authentication to require a login before accessing the webapp. By default, authentication is **disabled** and anyone can access the app.
+
+### Enabling Authentication
+
+Set the following environment variable before starting the app:
+
+```bash
+export ENABLE_SESSION_AUTH=true
+```
+
+You can also set these in your systemd service file or Docker environment.
+
+#### Required Environment Variables
+- `ENABLE_SESSION_AUTH=true` — Enable session authentication (default: disabled)
+- `APP_USERNAME` — Username for login (default: `admin`)
+- `APP_PASSWORD` — Password for login (default: `password`)
+- `SESSION_SECRET` — Secret for session encryption (default: `change_this_secret`)
+
+**Note:** The `SESSION_SECRET` is used to encrypt and sign session cookies. For production, use a long, random string. You can generate one with: `openssl rand -base64 32`
+
+#### Example (Linux/macOS)
+```bash
+export ENABLE_SESSION_AUTH=true
+export APP_USERNAME=myuser
+export APP_PASSWORD=mypassword
+export SESSION_SECRET=some-long-random-string
+npm start
+```
+
+#### Example (systemd)
+Add to your service file:
+```ini
+Environment=ENABLE_SESSION_AUTH=true
+Environment=APP_USERNAME=myuser
+Environment=APP_PASSWORD=mypassword
+Environment=SESSION_SECRET=some-long-random-string
+```
+
+Then reload and restart:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart humble-catalog-viewer
+```
+
+#### Example (Docker Compose)
+```yaml
+services:
+  humble-catalog-viewer:
+    image: your-image
+    environment:
+      - ENABLE_SESSION_AUTH=true
+      - APP_USERNAME=myuser
+      - APP_PASSWORD=mypassword
+      - SESSION_SECRET=some-long-random-string
+```
+
+### Testing Authentication
+
+1. **Start the app** with authentication enabled
+2. **Visit** `http://localhost:3000`
+3. **You should be redirected** to `/login`
+4. **Enter your credentials** (username/password from environment variables)
+5. **After login**, you'll be redirected to the main catalog page
+6. **Logout** using the `/logout` route
+
+### Disabling Authentication
+
+Unset or set `ENABLE_SESSION_AUTH` to anything other than `true` (e.g., not set, or `false`). The app will run with **no authentication** (default behavior). 
