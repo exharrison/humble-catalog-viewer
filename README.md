@@ -68,6 +68,14 @@ To run the Humble Catalog Viewer as a background service on Linux using systemd:
    Restart=on-failure
    User=yourusername
    Environment=NODE_ENV=production
+   # --- Optional: Enable session authentication ---
+   # Environment=ENABLE_SESSION_AUTH=true
+   # Environment=APP_USERNAME=myuser
+   # Environment=APP_PASSWORD=mypassword
+   # Environment=SESSION_SECRET=some-long-random-string
+   # --- Optional: Enable guest mode ---
+   # Environment=GUEST_MODE=true
+   # ---------------------------------------------
 
    [Install]
    WantedBy=multi-user.target
@@ -147,12 +155,44 @@ services:
       - SESSION_SECRET=some-long-random-string
 ```
 
-### Testing Authentication
+### Guest (Browsing) Mode
 
-1. **Start the app** with authentication enabled
+Guest mode allows users to browse bundles and books without logging in, but download links are hidden. This is useful for demo or public browsing scenarios.
+
+**Guest mode is disabled by default.**
+
+#### Enabling Guest Mode
+You can enable guest mode in one of two ways:
+
+- **Environment variable:**
+  ```bash
+  export GUEST_MODE=true
+  npm start
+  ```
+- **Command line flag:**
+  ```bash
+  node server.js --guest
+  # or
+  node server.js --guest-mode
+  ```
+- **systemd:**
+  Add to your service file:
+  ```ini
+  Environment=GUEST_MODE=true
+  ```
+
+#### How Guest Mode Works
+- When enabled, users can log in as a guest by entering `guest` as the username (any password).
+- Alternatively, visiting `/guest` in the browser will start a guest session.
+- Guest users can browse all bundles and books, but will not see download links.
+- If guest mode is not enabled, the guest login and `/guest` route are disabled.
+
+### Testing Authentication and Guest Mode
+
+1. **Start the app** with authentication and (optionally) guest mode enabled
 2. **Visit** `http://localhost:3000`
 3. **You should be redirected** to `/login`
-4. **Enter your credentials** (username/password from environment variables)
+4. **Enter your credentials** (username/password from environment variables) or `guest` as the username (if guest mode is enabled)
 5. **After login**, you'll be redirected to the main catalog page
 6. **Logout** using the `/logout` route
 

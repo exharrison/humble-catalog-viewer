@@ -120,23 +120,26 @@
         </div>
         
         <!-- Filter and Sort Controls -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <input type="text" name="filter" class="form-control" placeholder="Search bundles...">
-            </div>
-            <div class="col-md-2">
-                <select id="formatFilter" class="form-select">
-                    <option value="">All Formats</option>
-                    <option value="pdf">PDF</option>
-                    <option value="epub">EPUB</option>
-                    <option value="cbz">CBZ</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <input type="date" id="startDate" class="form-control" placeholder="Start date">
-            </div>
-            <div class="col-md-3">
-                <input type="date" id="endDate" class="form-control" placeholder="End date">
+        <div class="mb-4 d-flex justify-content-center">
+            <div class="w-100" style="max-width: 1140px;">
+                <div class="d-flex flex-wrap align-items-center gap-2" style="row-gap: 0.5rem;">
+                    <input type="text" name="filter" class="form-control flex-grow-1" style="max-width: 220px; min-width: 120px;" placeholder="Search bundles...">
+                    <select id="formatFilter" class="form-select" style="min-width: 140px; max-width: 180px;">
+                        <option value="">All Formats</option>
+                        <option value="pdf">PDF</option>
+                        <option value="epub">EPUB</option>
+                        <option value="cbz">CBZ</option>
+                    </select>
+                    <select id="sortBundles" class="form-select" style="min-width: 140px; max-width: 180px;">
+                        <option value="name">Sort: Name (A-Z)</option>
+                        <option value="recent">Sort: Most Recent</option>
+                        <option value="downloaded">Sort: Download Status</option>
+                    </select>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="date" id="startDate" class="form-control" style="min-width: 110px;" placeholder="Start date">
+                        <input type="date" id="endDate" class="form-control" style="min-width: 110px;" placeholder="End date">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -146,7 +149,7 @@
 
     <script>
         // Prepare bundle data for client-side rendering
-        const bundles = <%- JSON.stringify(bundles) %>;
+        const bundles = <%- JSON.stringify(bundles).replace(/</g, '\\u003c') %>;
         const filterSource = '<%= filterSource %>';
 
         function highlight(text, term) {
@@ -155,14 +158,14 @@
             return text.replace(re, '<mark>$1</mark>');
         }
 
-        function renderBundles(filterText, format, startDate, endDate) {
+        function renderBundles(filterText, format, startDate, endDate, sortOption) {
             const container = document.getElementById('bundleList');
             const filter = (filterText || '').toLowerCase();
             const formatVal = (format || '').toLowerCase();
             const start = startDate ? new Date(startDate) : null;
             const end = endDate ? new Date(endDate) : null;
             container.innerHTML = '';
-            const filtered = bundles.filter(b => {
+            let filtered = bundles.filter(b => {
                 // Name match
                 const nameMatch = filter && b.name.toLowerCase().includes(filter);
                 // Book title match
@@ -196,6 +199,26 @@
                 }
                 return true;
             });
+            // --- SORTING LOGIC ---
+            if (!sortOption) sortOption = (document.getElementById('sortBundles') && document.getElementById('sortBundles').value) || 'name';
+            filtered.sort((a, b) => {
+                if (sortOption === 'name') {
+                    return a.name.localeCompare(b.name);
+                } else if (sortOption === 'recent') {
+                    // Most recent first (descending by purchaseDate)
+                    const ad = a.purchaseDate ? new Date(a.purchaseDate) : new Date(0);
+                    const bd = b.purchaseDate ? new Date(b.purchaseDate) : new Date(0);
+                    return bd - ad;
+                } else if (sortOption === 'downloaded') {
+                    // Downloaded first, then by name
+                    if (a.downloaded === b.downloaded) {
+                        return a.name.localeCompare(b.name);
+                    }
+                    return a.downloaded ? -1 : 1;
+                }
+                return 0;
+            });
+            // --- END SORTING ---
             if (filtered.length === 0) {
                 container.innerHTML = '<div class="alert alert-info">No bundles found.</div>';
                 return;
@@ -244,16 +267,17 @@
         }
 
         // Initial render
-        renderBundles('');
+        renderBundles('', '', '', '', (document.getElementById('sortBundles') && document.getElementById('sortBundles').value) || 'name');
 
         (function() {
             var filterInput = document.querySelector('input[name="filter"]');
             var formatInput = document.getElementById('formatFilter');
             var startDateInput = document.getElementById('startDate');
             var endDateInput = document.getElementById('endDate');
+            var sortInput = document.getElementById('sortBundles');
             var bundleList = document.getElementById('bundleList');
             function doFilter() {
-                renderBundles(filterInput.value, formatInput.value, startDateInput.value, endDateInput.value);
+                renderBundles(filterInput.value, formatInput.value, startDateInput.value, endDateInput.value, sortInput.value);
                 if ((filterInput.value || formatInput.value || startDateInput.value || endDateInput.value) && bundleList) {
                     bundleList.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
@@ -262,6 +286,7 @@
             if (formatInput) formatInput.addEventListener('change', doFilter);
             if (startDateInput) startDateInput.addEventListener('change', doFilter);
             if (endDateInput) endDateInput.addEventListener('change', doFilter);
+            if (sortInput) sortInput.addEventListener('change', doFilter);
         })();
     </script>
 

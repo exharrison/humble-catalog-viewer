@@ -117,21 +117,30 @@
                         </div>
                         <div class="col-md-3">
                             <select id="filterSelect" class="form-select">
-                                <option value="all">All Books</option>
-                                <option value="downloaded">Downloaded Only</option>
-                                <option value="not-downloaded">Not Downloaded Only</option>
+                                <option value="all">All File Types</option>
+                                <option value="pdf">PDF</option>
+                                <option value="epub">EPUB</option>
+                                <option value="cbz">CBZ</option>
+                                <option value="mobi">MOBI</option>
+                                <option value="azw">AZW</option>
+                                <option value="other">Other</option>
                             </select>
                         </div>
                     </div>
                     
                     <div class="list-group" id="booksList">
                         <% bundle.books.forEach((book, index) => { %>
-                            <div class="list-group-item book-row" 
+                            <div class="list-group-item book-row"
                                  data-title="<%= book.title || '' %>"
                                  data-author="<%= Array.isArray(book.authors) ? book.authors[0] : (book.authors || '') %>"
                                  data-publisher="<%= book.publisher || '' %>"
                                  data-format-count="<%= Object.keys(book.formats).length %>"
-                                 data-downloaded="<%= book.downloaded ? 'true' : 'false' %>">
+                                 data-format_pdf="<%= book.formats && book.formats['pdf'] ? 'true' : 'false' %>"
+                                 data-format_epub="<%= book.formats && book.formats['epub'] ? 'true' : 'false' %>"
+                                 data-format_cbz="<%= book.formats && book.formats['cbz'] ? 'true' : 'false' %>"
+                                 data-format_mobi="<%= book.formats && book.formats['mobi'] ? 'true' : 'false' %>"
+                                 data-format_azw="<%= book.formats && book.formats['azw'] ? 'true' : 'false' %>"
+                                 >
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <span class="arrow-icon me-2">▶</span>
@@ -194,12 +203,14 @@
                                                         </span>
                                                     </div>
                                                     <div>
-                                                        <% if (format.download_urls && (format.download_urls.web || format.download_urls.bittorrent)) { %>
-                                                            <% if (format.download_urls.web) { %>
-                                                                <a href="<%= format.download_urls.web %>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary me-1">Web</a>
-                                                            <% } %>
-                                                            <% if (format.download_urls.bittorrent) { %>
-                                                                <a href="<%= format.download_urls.bittorrent %>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">BitTorrent</a>
+                                                        <% if (authEnabled && isAuthenticated && !isGuest) { %>
+                                                            <% if (format.download_urls && (format.download_urls.web || format.download_urls.bittorrent)) { %>
+                                                                <% if (format.download_urls.web) { %>
+                                                                    <a href="<%= format.download_urls.web %>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary me-1">Web</a>
+                                                                <% } %>
+                                                                <% if (format.download_urls.bittorrent) { %>
+                                                                    <a href="<%= format.download_urls.bittorrent %>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">BitTorrent</a>
+                                                                <% } %>
                                                             <% } %>
                                                         <% } %>
                                                     </div>
@@ -252,38 +263,43 @@
         function filterBooks() {
             const searchTerm = searchInput.value.toLowerCase();
             const filterValue = document.getElementById('filterSelect').value;
-            
             Array.from(books).forEach(book => {
                 const title = book.dataset.title.toLowerCase();
                 const author = book.dataset.author.toLowerCase();
                 const publisher = book.dataset.publisher.toLowerCase();
-                const downloaded = book.dataset.downloaded;
-                
+                // File type filter: check if the book has the selected format
+                let matchesFileType = false;
+                if (filterValue === 'all') {
+                    matchesFileType = true;
+                } else if (filterValue === 'other') {
+                    // Show books that have formats, but none of the main types
+                    const formats = Object.keys(book.dataset).filter(k => k.startsWith('format_') && book.dataset[k] === 'true');
+                    matchesFileType = formats.length > 0 &&
+                        !book.dataset.format_pdf &&
+                        !book.dataset.format_epub &&
+                        !book.dataset.format_cbz &&
+                        !book.dataset.format_mobi &&
+                        !book.dataset.format_azw;
+                } else {
+                    matchesFileType = book.dataset['format_' + filterValue] === 'true';
+                }
                 const matchesSearch = title.includes(searchTerm) || 
                                     author.includes(searchTerm) || 
                                     publisher.includes(searchTerm);
-                                    
-                const matchesFilter = filterValue === 'all' || 
-                                    (filterValue === 'downloaded' && downloaded === 'true') ||
-                                    (filterValue === 'not-downloaded' && downloaded === 'false');
-                
-                book.classList.toggle('hidden', !matchesSearch || !matchesFilter);
+                book.classList.toggle('hidden', !matchesSearch || !matchesFileType);
             });
-            
             updateBookCount();
         }
 
         // Sorting functionality
         function sortBooks(property) {
             const booksArray = Array.from(books);
-            
             booksArray.sort((a, b) => {
                 if (property === 'format-count') {
                     return parseInt(b.dataset[property]) - parseInt(a.dataset[property]);
                 }
                 return a.dataset[property].localeCompare(b.dataset[property]);
             });
-            
             booksArray.forEach(book => booksList.appendChild(book));
         }
 

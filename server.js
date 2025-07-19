@@ -6,7 +6,13 @@ const app = express();
 const port = 3000;
 const session = require('express-session');
 
+// Parse command line arguments for guest mode
+const argv = process.argv.slice(2);
+const CMD_GUEST_MODE = argv.includes('--guest') || argv.includes('--guest-mode');
+
 const ENABLE_SESSION_AUTH = process.env.ENABLE_SESSION_AUTH === 'true';
+// Guest mode enabled if env var is true or command line flag is present
+const ENABLE_GUEST_MODE = process.env.GUEST_MODE === 'true' || CMD_GUEST_MODE;
 const APP_USERNAME = process.env.APP_USERNAME || 'admin';
 const APP_PASSWORD = process.env.APP_PASSWORD || 'password';
 
@@ -15,8 +21,17 @@ if (ENABLE_SESSION_AUTH) {
     secret: process.env.SESSION_SECRET || 'change_this_secret',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+    cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 } // 7 days
   }));
+
+  // Guest mode route (only if enabled)
+  if (ENABLE_GUEST_MODE) {
+    app.get('/guest', (req, res) => {
+      req.session.user = null;
+      req.session.guest = true;
+      res.redirect('/');
+    });
+  }
 
   // Login page
   app.get('/login', (req, res) => {
@@ -27,8 +42,14 @@ if (ENABLE_SESSION_AUTH) {
   // Login handler
   app.post('/login', express.urlencoded({ extended: true }), (req, res) => {
     const { username, password } = req.body;
+    if (ENABLE_GUEST_MODE && username === 'guest') {
+      req.session.user = null;
+      req.session.guest = true;
+      return res.redirect('/');
+    }
     if (username === APP_USERNAME && password === APP_PASSWORD) {
       req.session.user = username;
+      req.session.guest = false;
       return res.redirect('/');
     }
     res.render('login', { error: 'Invalid credentials' });
@@ -41,17 +62,18 @@ if (ENABLE_SESSION_AUTH) {
     });
   });
 
-  // Auth middleware for all routes except login/logout/static
+  // Auth middleware for all routes except login/logout/guest/static
   app.use((req, res, next) => {
     if (
       req.path === '/login' ||
       req.path === '/logout' ||
+      (ENABLE_GUEST_MODE && req.path === '/guest') ||
       req.path.startsWith('/public') ||
       req.path.startsWith('/favicon.ico')
     ) {
       return next();
     }
-    if (!req.session.user) {
+    if (!req.session.user && !req.session.guest) {
       return res.redirect('/login');
     }
     next();
@@ -255,7 +277,11 @@ app.get('/', async (req, res) => {
                 downloadedBundles: downloadedBundles
             },
             bookSearch: req.query.bookSearch || '',
-            searchResults
+            searchResults,
+            isAuthenticated: !!(req.session && req.session.user),
+            isGuest: !!(req.session && req.session.guest),
+            authEnabled: ENABLE_SESSION_AUTH,
+            guestModeEnabled: ENABLE_GUEST_MODE
         });
     } catch (error) {
         console.error('Error loading catalog:', error);
@@ -357,7 +383,11 @@ app.get('/bundle/:id', async (req, res, next) => {
                 books: books,
                 source: source,
                 cover: cover
-            }
+            },
+            isAuthenticated: !!(req.session && req.session.user),
+            isGuest: !!(req.session && req.session.guest),
+            authEnabled: ENABLE_SESSION_AUTH,
+            guestModeEnabled: ENABLE_GUEST_MODE
         });
     } catch (error) {
         console.error('Error loading bundle:', error);
