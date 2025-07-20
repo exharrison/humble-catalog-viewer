@@ -144,11 +144,19 @@ function normalizeFanaticalBundle(bundle) {
     } else if (typeof totalSpent === 'number' && !totalSpent.toString().includes('.')) {
         totalSpent = (totalSpent / 100).toFixed(2);
     }
+    // Try to get a purchase date if present, otherwise fallback to 0 (Jan 1, 1970)
+    let purchaseDate = null;
+    if (bundle.purchase_date) {
+        purchaseDate = new Date(bundle.purchase_date);
+        if (isNaN(purchaseDate)) purchaseDate = null;
+    }
+    // If not present, fallback to 0
+    if (!purchaseDate) purchaseDate = new Date(0);
     return {
         id: bundle.slug || bundle._id,
         name: bundle.name,
         cover: bundle.cover || null,
-        purchaseDate: null, // Fanatical doesn't have purchase date by default
+        purchaseDate: purchaseDate, // always a Date object
         numBooks: bundle.books ? bundle.books.length : 0,
         downloaded: bundle.downloaded === true,
         gamekey: null,
@@ -237,7 +245,8 @@ app.get('/', async (req, res) => {
             if (sort === 'name') {
                 cmp = a.name.localeCompare(b.name);
             } else if (sort === 'date') {
-                cmp = (a.purchaseDate || 0) - (b.purchaseDate || 0);
+                // Always compare as Date objects
+                cmp = (a.purchaseDate ? a.purchaseDate.getTime() : 0) - (b.purchaseDate ? b.purchaseDate.getTime() : 0);
             } else if (sort === 'downloaded') {
                 cmp = (a.downloaded === b.downloaded) ? 0 : a.downloaded ? -1 : 1;
             }
