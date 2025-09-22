@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "setup-pwa": "./scripts/setup-pwa.sh",
+    "generate-icons": "python3 scripts/generate-icons.py"
   },
   "dependencies": {
     "ejs": "^3.1.9",

@@ -1,0 +1,2 @@
+# Python dependencies for PWA icon generation
+Pillow>=10.0.0

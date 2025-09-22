@@ -57,4 +57,13 @@ jspm_packages/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db 
+Thumbs.db
+
+# PWA files (generated/copied files in root)
+/manifest.json
+/sw.js
+/offline.html
+/icons/
+
+# Generated PWA icons (keep source SVG)
+public/icons/*.png 

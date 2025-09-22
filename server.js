@@ -355,6 +355,12 @@ app.get('/bundle/:id', async (req, res, next) => {
             // Already normalized for Fanatical
             books = bundle.books;
         }
+        // Sort books alphabetically by title or name
+        books = books.slice().sort((a, b) => {
+            const t1 = (a.title || a.name || '').toLowerCase();
+            const t2 = (b.title || b.name || '').toLowerCase();
+            return t1.localeCompare(t2);
+        });
         console.log('Rendering bundle page for:', bundle.name, 'with', books.length, 'books');
 
         let bundleId = null;
@@ -408,6 +414,15 @@ app.get('/bundle/:id', async (req, res, next) => {
 app.use((err, req, res, next) => {
     console.error('Global error handler:', err);
     res.status(500).send(`<pre>${err.stack || err}</pre>`);
+});
+
+// JSON download routes (protected by auth middleware)
+app.get('/humble', (req, res) => {
+    res.download(catalogPath, 'humble_catalog.json');
+});
+
+app.get('/fanatical', (req, res) => {
+    res.download(fanaticalPath, 'fanatical_catalog.json');
 });
 
 // Start server

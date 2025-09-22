@@ -12,6 +12,7 @@ A web interface for viewing your Humble Bundle and Fanatical book bundles.
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v14 or newer recommended)
 - [npm](https://www.npmjs.com/)
+- [Python 3](https://www.python.org/) (for PWA icon generation)
 - JSON data files from humble (https://github.com/exharrison/humblebundle-ebook-downloader) and fanatical (https://github.com/exharrison/fanatical-ebook-downloader)
 
 ### Installation
@@ -24,7 +25,18 @@ A web interface for viewing your Humble Bundle and Fanatical book bundles.
    ```bash
    npm install
    ```
-3. Place your data files:
+
+3. Install Python dependencies (for PWA icon generation):
+   ```bash
+   pip3 install -r requirements.txt
+   ```
+
+4. Generate PWA files:
+   ```bash
+   npm run setup-pwa
+   ```
+
+5. Place your data files:
    - `detailed_catalog.json` (from Humble Bundle)
    - `fanatical-book-details.json` (from Fanatical)
    - **These files are ignored by git for your security.**
@@ -96,6 +108,57 @@ To run the Humble Catalog Viewer as a background service on Linux using systemd:
    ```
 
 The app will now start automatically on boot and can be managed with `systemctl`. 
+
+## PWA (Progressive Web App) Setup
+
+This app includes PWA features for offline browsing and app-like installation. The PWA files are generated from source files to keep the repository clean.
+
+### PWA Files Structure
+
+**Source files (tracked in git):**
+- `public/manifest.json` - Web app manifest source
+- `public/sw.js` - Service worker source  
+- `public/offline.html` - Offline page source
+- `public/icons/icon.svg` - Source SVG icon
+
+**Generated files (ignored by git):**
+- `manifest.json` - Copy for serving
+- `sw.js` - Copy for serving
+- `offline.html` - Copy for serving
+- `icons/` - Generated PNG icons directory
+- `public/icons/*.png` - Generated PNG icons
+
+### Manual PWA Setup
+
+If you prefer to set up PWA files manually:
+
+1. **Copy PWA files to root:**
+   ```bash
+   cp public/manifest.json manifest.json
+   cp public/sw.js sw.js
+   cp public/offline.html offline.html
+   ```
+
+2. **Generate app icons:**
+   ```bash
+   mkdir -p icons
+   # Generate PNG icons from SVG (requires ImageMagick or similar)
+   # Or use the provided Python script:
+   python3 scripts/generate-icons.py
+   ```
+
+3. **Update manifest icon paths:**
+   - Edit `manifest.json` to use `/icons/` instead of `/public/icons/`
+   - Update service worker paths in `sw.js`
+
+### PWA Features
+
+- **Offline browsing** - Cache bundles and books for offline access
+- **App installation** - Install as native app on mobile/desktop
+- **Faster loading** - Cached assets load instantly
+- **Custom offline page** - Branded experience when offline
+
+**Note:** PWA features require HTTPS in production (not localhost). Use ngrok or similar for testing on mobile devices.
 
 ## Optional Session Authentication
 

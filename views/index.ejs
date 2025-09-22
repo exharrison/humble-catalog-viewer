@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Humble Bundle Catalog</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0074d9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Catalog Viewer">
+    <link rel="apple-touch-icon" href="/public/icons/icon-192x192.png">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .bundle-card {
@@ -291,5 +302,50 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator && location.protocol === 'https:') {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('SW registered successfully: ', registration);
+                        console.log('SW scope: ', registration.scope);
+                    })
+                    .catch((registrationError) => {
+                        console.error('SW registration failed: ', registrationError);
+                        console.error('Error details: ', registrationError.message);
+                    });
+            });
+        } else if (location.protocol !== 'https:') {
+            console.log('Service Worker requires HTTPS for non-localhost access');
+        } else {
+            console.log('Service Worker not supported in this browser');
+        }
+    </script>
+    
+    <!-- JSON Download Links (for authenticated users only) -->
+    <% if (authEnabled && isAuthenticated && !isGuest) { %>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Download Catalog Data</h5>
+                        <p class="card-text text-muted">Download the raw JSON data for offline use or backup.</p>
+                        <div class="d-flex gap-2">
+                            <a href="/humble" class="btn btn-outline-primary">
+                                <i class="bi bi-download"></i> Download Humble Catalog
+                            </a>
+                            <a href="/fanatical" class="btn btn-outline-secondary">
+                                <i class="bi bi-download"></i> Download Fanatical Catalog
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <% } %>
 </body>
 </html> 
